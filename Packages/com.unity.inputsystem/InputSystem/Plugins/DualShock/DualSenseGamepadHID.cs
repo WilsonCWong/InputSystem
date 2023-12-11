@@ -164,9 +164,18 @@ namespace UnityEngine.InputSystem.DualShock
         public ButtonControl rightTriggerButton { get; protected set; }
         public ButtonControl playStationButton { get; protected set; }
 
+        public virtual Color lightBarColor
+        {
+            get
+            {
+                m_LightBarColor ??= Color.black;
+                return m_LightBarColor.Value;
+            }
+        }
+
         private float? m_LowFrequencyMotorSpeed;
         private float? m_HighFrequenceyMotorSpeed;
-        private Color? m_LightBarColor;
+        protected Color? m_LightBarColor;
         private byte outputSequenceId;
 
         protected override void FinishSetup()
