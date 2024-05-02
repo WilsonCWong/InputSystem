@@ -468,12 +468,21 @@ namespace UnityEngine.InputSystem.UI
                 eventData.eligibleForClick = true;
                 eventData.useDragThreshold = true;
 
+                // CUSTOM: I added this code here to fix the behaviour where a Selectable is deselected when clicked on
+                // even when interactable is set to false and upon clicking a control with the non-primary mouse buttons.
                 var selectHandler = ExecuteEvents.GetEventHandler<ISelectHandler>(currentOverGo);
-
+                var selectable = currentOverGo != null ? currentOverGo.GetComponent<Selectable>() : null;
+                var isInteractable = selectable != null ? selectable.interactable : false;
+ 
                 // If we have clicked something new, deselect the old thing and leave 'selection handling' up
                 // to the press event (except if there's none and we're told to not deselect in that case).
-                if (selectHandler != eventSystem.currentSelectedGameObject && (selectHandler != null || m_DeselectOnBackgroundClick))
-                    eventSystem.SetSelectedGameObject(null, eventData);
+                if (selectHandler != eventSystem.currentSelectedGameObject && (selectHandler != null || m_DeselectOnBackgroundClick)) 
+                    {
+                    if (m_DeselectOnBackgroundClick)
+                        eventSystem.SetSelectedGameObject(null, eventData);
+                    else if (selectHandler != null && isInteractable && eventData.button == PointerEventData.InputButton.Left)
+                        eventSystem.SetSelectedGameObject(null, eventData);
+                }
 
                 // Invoke OnPointerDown, if present.
                 var newPressed = ExecuteEvents.ExecuteHierarchy(currentOverGo, eventData, ExecuteEvents.pointerDownHandler);
