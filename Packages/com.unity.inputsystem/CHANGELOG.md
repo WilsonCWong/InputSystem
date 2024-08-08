@@ -10,12 +10,34 @@ however, it has to be formatted properly to pass verification tests.
 
 ## [Unreleased] - yyyy-mm-dd
 
-### Change
+### Fixed
+- Fixed memory allocation on every frame when using UIDocument without EventSystem. [ISXB-953](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-953)
+
+### Changed
+- Use `ProfilerMarker` instead of `Profiler.BeginSample` and `Profiler.EndSample` when appropriate to enable recording of profiling data.
+
+## [1.10.0] - 2024-07-24
+
+### Fixed
+- Fixed default scroll speed in uGUI being slower than before. [ISXB-766](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-766)
+- Fixed an issue when multiple interactions drive an action and perform during the cancelation of the current active interaction [ISXB-310](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-310).
+- Fixed an issue when generating C# class of Input Actions that contain an action map named `Debug` [ISXB-851](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-851).
+- Fixed ArgumentNullException thrown when accessing Action's bindings after changing Composite part. [ISXB-494](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-494).
+
+### Added
+- Added `InputSystemUIInputModule.scrollDeltaPerTick` property, a customizable multiplicative factor applied to the scroll wheel speed before it is sent to UI components. Note that this has no effect on UI Toolkit content, only uGUI.
+
+## [1.9.0] - 2024-07-15
+
+### Changed
 - Added warning messages to both `OnScreenStick` and `OnScreenButton` Inspector editors that would display a warning message in case on-screen control components are added to a `GameObject` not part of a valid UI hierarchy.
 - Changed behavior for internal feature flag relating to Windows Gaming Input to be ignored on non-supported platforms.
+- Changed `DualSenseHIDInputReport` from internal to public visibility
+- Added Input Setting option allowing to keep platform-specific scroll wheel input values instead of automatically converting them to a normalized range.
 
 ### Fixed
 - Avoid potential crashes from `NullReferenceException` in `FireStateChangeNotifications`.
+- Fixed cases where `wasPressedThisFrame` would not return true if a press and release happened within the same frame before being queried (and vice versa for `wasReleasedThisFrame`).
 - Fixed an issue where a composite binding would not be consecutively triggered after ResetDevice() has been called from the associated action handler [ISXB-746](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-746).
 - Fixed resource designation for "d_InputControl" icon to address CI failure.
 - Fixed an issue where a composite binding would not be consecutively triggered after disabling actions while there are action modifiers in progress [ISXB-505](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-505).
@@ -23,6 +45,7 @@ however, it has to be formatted properly to pass verification tests.
 - Fixed error thrown when Cancelling Control Scheme creation in Input Actions Editor.
 - Fixed Scheme Name in Control Scheme editor menu that gets reset when editing devices [ISXB-763](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-763).
 - Fixed an issue where `InputActionAsset.FindAction(string, bool)` would throw `System.NullReferenceException` instead of returning `null` if searching for a non-existent action with an explicit action path and using `throwIfNotFound: false`, e.g. searching for "Map/Action" when `InputActionMap` "Map" exists but no `InputAction` named "Action" exists within that map [ISXB-895](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-895).
+- Fixed scroll speed being slower when using InputSystemUIInputModule instead of StandaloneInputModule. (https://jira.unity3d.com/browse/ISXB-771)
 - Fixed an issue where adding a `OnScreenButton` or `OnScreenStick` to a regular GameObject would lead to exception in editor.
 - Fixed an issue where adding a `OnScreenStick` to a regular GameObject and entering play-mode would lead to exceptions being generated.
 - Fixed InputActionReference issues when domain reloads are disabled [ISXB-601](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-601), [ISXB-718](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-718), [ISXB-900](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-900)
@@ -32,16 +55,17 @@ however, it has to be formatted properly to pass verification tests.
 - Submit and Cancel UI actions will now respect configured interactions. [ISXB-841](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-841).
 - Fixed the UI generation of enum fields when editing interactions of action properties. The new selected value was lost when saving.
 - Fixed the UI generation of custom interactions of action properties when it rely on OnGUI callback. [ISXB-886](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-886).
-
+- Fixed deletion of last composite part raising an exception. [ISXB-804](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-804)
+- Fixed an issue related to Visualizers sample where exceptions would be thrown by InputActionVisualizer and InputControlVisualizer when entering play-mode if added as components to a new `GameObject`.
+- Fixed an issue with InputAction Asset editor where invalid ControlScheme names with only spaces could be entered. [ISXB-547](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-547).
+- Fixed deletion of last composite part raising an exception. [ISXB-804](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-804)
 
 ### Added
 - Added additional device information when logging the error due to exceeding the maximum number of events processed
   set by `InputSystem.settings.maxEventsBytesPerUpdate`. This additional information is available in development builds
   only.
-- Fixed deletion of last composite part raising an exception. [ISXB-804](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-804)
-
-### Changed
-- Changed `DualSenseHIDInputReport` from internal to public visibility
+- Expanded editor and build insight analytics to cover ``.inputactions` asset editor usage, `InputSettings` and common component configurations.
+- Added Input Setting option allowing to keep platform-specific scroll wheel input values instead of automatically converting them to a normalized range.
 
 ## [1.8.2] - 2024-04-29
 
