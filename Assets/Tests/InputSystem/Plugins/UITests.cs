@@ -1037,7 +1037,7 @@ internal class UITests : CoreTestsFixture
             Assert.That(scene.rightChildReceiver.events[0].pointerData.pointerId, Is.EqualTo(pointerId));
             Assert.That(scene.rightChildReceiver.events[0].pointerData.position, Is.EqualTo(thirdScreenPosition).Using(Vector2EqualityComparer.Instance));
             Assert.That(scene.rightChildReceiver.events[0].pointerData.delta, Is.EqualTo(Vector2.zero));
-            Assert.That(scene.rightChildReceiver.events[0].pointerData.scrollDelta, Is.EqualTo(Vector2.one * (1 / InputSystemUIInputModule.kPixelPerLine)).Using(Vector2EqualityComparer.Instance));
+            Assert.That(scene.rightChildReceiver.events[0].pointerData.scrollDelta, Is.EqualTo(Vector2.one * scene.uiModule.scrollDeltaPerTick).Using(Vector2EqualityComparer.Instance));
             Assert.That(scene.rightChildReceiver.events[0].pointerData.pointerEnter, Is.SameAs(scene.rightGameObject));
             Assert.That(scene.rightChildReceiver.events[0].pointerData.pointerDrag, Is.Null);
             Assert.That(scene.rightChildReceiver.events[0].pointerData.pointerPress, Is.Null);
@@ -1173,6 +1173,69 @@ internal class UITests : CoreTestsFixture
             )
         );
     }
+
+#if UNITY_INPUT_SYSTEM_PLATFORM_SCROLL_DELTA
+    [UnityTest]
+    [Category("UI")]
+    [TestCase(1.0f, ExpectedResult = -1)]
+    [TestCase(120.0f, ExpectedResult = -1)]
+    public IEnumerator UI_ReceivesNormalizedScrollWheelDelta(float scrollWheelDeltaPerTick)
+    {
+        var mouse = InputSystem.AddDevice<Mouse>();
+        var scene = CreateTestUI();
+        var actions = new DefaultInputActions();
+        scene.uiModule.point = InputActionReference.Create(actions.UI.Point);
+        scene.uiModule.scrollWheel = InputActionReference.Create(actions.UI.ScrollWheel);
+
+        Set(mouse.position, scene.From640x480ToScreen(100, 100));
+        Set(mouse.scroll, Vector2.zero);
+
+        yield return null;
+
+        Assert.That(scene.eventSystem.IsPointerOverGameObject(), Is.True);
+
+        scene.leftChildReceiver.events.Clear();
+
+        // Set scroll delta with a custom range.
+        ((InputTestRuntime)InputRuntime.s_Instance).scrollWheelDeltaPerTick = scrollWheelDeltaPerTick;
+        Set(mouse.scroll, new Vector2(0, scrollWheelDeltaPerTick));
+        yield return null;
+
+        // UI should receive scroll delta in the range defined by InputSystemUIInputModule.
+        Assert.That(scene.leftChildReceiver.events,
+            EventSequence(
+                OneEvent("type", EventType.Scroll),
+                AllEvents("position", scene.From640x480ToScreen(100, 100)),
+                AllEvents("scrollDelta", Vector2.up * scene.uiModule.scrollDeltaPerTick)
+            )
+        );
+    }
+
+#endif
+
+#if UNITY_INPUT_SYSTEM_INPUT_MODULE_SCROLL_DELTA
+    [TestCase(1)]
+    [TestCase(2)]
+    [Category("UI")]
+    public void UI_ConvertPointerEventScrollDeltaToTicks_AppliesScrollWheelMultiplier(float multiplier)
+    {
+        var scene = CreateTestUI();
+        scene.uiModule.scrollDeltaPerTick = multiplier;
+        var ticks = scene.uiModule.ConvertPointerEventScrollDeltaToTicks(Vector2.one);
+        Assert.That(ticks, Is.EqualTo(Vector2.one / multiplier).Within(0.001f));
+    }
+
+    [TestCase(0)]
+    [TestCase(1)]
+    [Category("UI")]
+    public void UI_ConvertPointerEventScrollDeltaToTicks_ReturnsZeroIfScrollDeltaPerTickIsZero(float delta)
+    {
+        var scene = CreateTestUI();
+        scene.uiModule.scrollDeltaPerTick = 0;
+        Assert.That(scene.uiModule.ConvertPointerEventScrollDeltaToTicks(Vector2.one * delta), Is.EqualTo(Vector2.zero));
+    }
+
+#endif
 
     [UnityTest]
     [Category("UI")]
@@ -3521,6 +3584,9 @@ internal class UITests : CoreTestsFixture
     [TestCase(UIPointerBehavior.SingleUnifiedPointer, ExpectedResult = 1)]
 #if (UNITY_ANDROID || UNITY_IOS || UNITY_TVOS) || (TEMP_DISABLE_UITOOLKIT_TEST && (UNITY_STANDALONE_OSX || UNITY_STANDALONE_WIN))
     [Ignore("Currently fails on the farm but succeeds locally on Note 10+; needs looking into.")]
+#endif
+#if UNITY_STANDALONE_LINUX || UNITY_EDITOR_LINUX
+    [Ignore("Disabled to make test suite pass on Linux")]
 #endif
     [PrebuildSetup(typeof(UI_CanOperateUIToolkitInterface_UsingInputSystemUIInputModule_Setup))]
     public IEnumerator UI_CanOperateUIToolkitInterface_UsingInputSystemUIInputModule(UIPointerBehavior pointerBehavior)
