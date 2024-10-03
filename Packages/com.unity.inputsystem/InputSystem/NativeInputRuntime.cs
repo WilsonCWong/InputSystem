@@ -393,16 +393,18 @@ namespace UnityEngine.InputSystem.LowLevel
 
         public void SendAnalytic(InputAnalytics.IInputAnalytic analytic)
         {
-        #if ENABLE_CLOUD_SERVICES_ANALYTICS
             #if (UNITY_EDITOR)
                 #if (UNITY_2023_2_OR_NEWER)
             EditorAnalytics.SendAnalytic(analytic);
                 #else
+            // The preprocessor filtering is a workaround for the fact that the AnalyticsResult enum is not available before 2023.1.0a14 when not using the built-in Unity Analytics module.
+                    #if UNITY_INPUT_SYSTEM_ENABLE_ANALYTICS || UNITY_2023_1_OR_NEWER
             var info = analytic.info;
             EditorAnalytics.RegisterEventWithLimit(info.Name, info.MaxEventsPerHour, info.MaxNumberOfElements, InputAnalytics.kVendorKey);
             EditorAnalytics.SendEventWithLimit(info.Name, analytic);
+                    #endif // UNITY_INPUT_SYSTEM_ENABLE_ANALYTICS || UNITY_2023_1_OR_NEWER
                 #endif // UNITY_2023_2_OR_NEWER
-            #elif (UNITY_ANALYTICS) // Implicitly: !UNITY_EDITOR
+            #elif (ENABLE_CLOUD_SERVICES_ANALYTICS) // Implicitly: !UNITY_EDITOR && UNITY_ANALYTICS
             var info = analytic.info;
             Analytics.Analytics.RegisterEvent(info.Name, info.MaxEventsPerHour, info.MaxNumberOfElements, InputAnalytics.kVendorKey);
             if (analytic.TryGatherData(out var data, out var error))
@@ -410,7 +412,6 @@ namespace UnityEngine.InputSystem.LowLevel
             else
                 Debug.Log(error);     // Non fatal
             #endif //UNITY_EDITOR
-        #endif //ENABLE_CLOUD_SERVICES_ANALYTICS
         }
 
         #endif // UNITY_ANALYTICS || UNITY_EDITOR
