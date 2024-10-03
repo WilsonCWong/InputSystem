@@ -404,7 +404,7 @@ namespace UnityEngine.InputSystem.UI
 
         private void ProcessPointerMovement(ExtendedPointerEventData eventData, GameObject currentPointerTarget)
         {
-            #if UNITY_2021_1_OR_NEWER
+#if UNITY_2021_1_OR_NEWER
             // If the pointer moved, send move events to all UI elements the pointer is
             // currently over.
             var wasMoved = eventData.IsPointerMoving();
@@ -413,7 +413,7 @@ namespace UnityEngine.InputSystem.UI
                 for (var i = 0; i < eventData.hovered.Count; ++i)
                     ExecuteEvents.Execute(eventData.hovered[i], eventData, ExecuteEvents.pointerMoveHandler);
             }
-            #endif
+#endif
 
             // If we have no target or pointerEnter has been deleted,
             // we just send exit events to anything we are tracking
@@ -435,32 +435,78 @@ namespace UnityEngine.InputSystem.UI
             if (eventData.pointerEnter == currentPointerTarget && currentPointerTarget)
                 return;
 
-            var commonRoot = FindCommonRoot(eventData.pointerEnter, currentPointerTarget)?.transform;
+            Transform commonRoot = FindCommonRoot(eventData.pointerEnter, currentPointerTarget)?.transform;
+            Transform pointerParent = ((Component)currentPointerTarget.GetComponentInParent<IPointerExitHandler>())?.transform;
 
             // We walk up the tree until a common root and the last entered and current entered object is found.
             // Then send exit and enter events up to, but not including, the common root.
+            // ** or when !m_SendPointerEnterToParent, stop when meeting a gameobject with an exit event handler
             if (eventData.pointerEnter != null)
             {
-                for (var current = eventData.pointerEnter.transform; current != null && current != commonRoot; current = current.parent)
+                var current = eventData.pointerEnter.transform;
+                while (current != null)
                 {
+                    // if we reach the common root break out!
+                    if (sendPointerHoverToParent && current == commonRoot)
+                        break;
+
+                    // if we reach a PointerExitEvent break out!
+                    if (!sendPointerHoverToParent && current == pointerParent)
+                        break;
+
+#if UNITY_2021_3_OR_NEWER
+                    eventData.fullyExited = current != commonRoot && eventData.pointerEnter != currentPointerTarget;
+#endif
                     ExecuteEvents.Execute(current.gameObject, eventData, ExecuteEvents.pointerExitHandler);
                     eventData.hovered.Remove(current.gameObject);
+
+                    if (sendPointerHoverToParent)
+                        current = current.parent;
+
+                    // if we reach the common root break out!
+                    if (current == commonRoot)
+                        break;
+
+                    if (!sendPointerHoverToParent)
+                        current = current.parent;
                 }
             }
 
+            // now issue the enter call up to but not including the common root
+            Transform oldPointerEnter = eventData.pointerEnter ? eventData.pointerEnter.transform : null;
             eventData.pointerEnter = currentPointerTarget;
             if (currentPointerTarget != null)
             {
-                for (var current = currentPointerTarget.transform;
-                     current != null && current != commonRoot && !PointerShouldIgnoreTransform(current);
-                     current = current.parent)
+                Transform current = currentPointerTarget.transform;
+                while (current != null && !PointerShouldIgnoreTransform(current))
                 {
+#if UNITY_2021_3_OR_NEWER
+                    eventData.reentered = current == commonRoot && current != oldPointerEnter;
+                    // if we are sending the event to parent, they are already in hover mode at that point. No need to bubble up the event.
+                    if (sendPointerHoverToParent && eventData.reentered)
+                        break;
+#endif
+
                     ExecuteEvents.Execute(current.gameObject, eventData, ExecuteEvents.pointerEnterHandler);
-                    #if UNITY_2021_1_OR_NEWER
+#if UNITY_2021_1_OR_NEWER
                     if (wasMoved)
                         ExecuteEvents.Execute(current.gameObject, eventData, ExecuteEvents.pointerMoveHandler);
-                    #endif
+#endif
                     eventData.hovered.Add(current.gameObject);
+
+                    // stop when encountering an object with the pointerEnterHandler
+                    if (!sendPointerHoverToParent && current.GetComponent<IPointerEnterHandler>() != null)
+                        break;
+
+                    if (sendPointerHoverToParent)
+                        current = current.parent;
+
+                    // if we reach the common root break out!
+                    if (current == commonRoot)
+                        break;
+
+                    if (!sendPointerHoverToParent)
+                        current = current.parent;
                 }
             }
         }
@@ -505,10 +551,12 @@ namespace UnityEngine.InputSystem.UI
                 // Invoke OnPointerDown, if present.
                 var newPressed = ExecuteEvents.ExecuteHierarchy(currentOverGo, eventData, ExecuteEvents.pointerDownHandler);
 
+                var pointerClickHandler = ExecuteEvents.GetEventHandler<IPointerClickHandler>(currentOverGo);
+
                 // If no GO responded to OnPointerDown, look for one that responds to OnPointerClick.
                 // NOTE: This only looks up the handler. We don't invoke OnPointerClick here.
                 if (newPressed == null)
-                    newPressed = ExecuteEvents.GetEventHandler<IPointerClickHandler>(currentOverGo);
+                    newPressed = pointerClickHandler;
 
                 // Reset click state if delay to last release was too long or if we didn't
                 // press on the same object as last time. The latter part we don't know until
@@ -523,9 +571,9 @@ namespace UnityEngine.InputSystem.UI
                 // Set pointerPress. This nukes lastPress. Meaning that after OnPointerDown, lastPress will
                 // become null.
                 eventData.pointerPress = newPressed;
-                #if UNITY_2020_1_OR_NEWER // pointerClick doesn't exist before this.
-                eventData.pointerClick = ExecuteEvents.GetEventHandler<IPointerClickHandler>(currentOverGo);
-                #endif
+#if UNITY_2020_1_OR_NEWER // pointerClick doesn't exist before this.
+                eventData.pointerClick = pointerClickHandler;
+#endif
                 eventData.rawPointerPress = currentOverGo;
 
                 // Save the drag handler for drag events during this mouse down.
@@ -546,11 +594,11 @@ namespace UnityEngine.InputSystem.UI
                 //       2) StandaloneInputModule increases click counts even if something is eventually not deemed a
                 //          click and OnPointerClick is thus never invoked.
                 var pointerClickHandler = ExecuteEvents.GetEventHandler<IPointerClickHandler>(currentOverGo);
-                #if UNITY_2020_1_OR_NEWER
-                var isClick = eventData.pointerClick == pointerClickHandler && eventData.eligibleForClick;
-                #else
-                var isClick = eventData.pointerPress == pointerClickHandler && eventData.eligibleForClick;
-                #endif
+#if UNITY_2020_1_OR_NEWER
+                var isClick = eventData.pointerClick != null && eventData.pointerClick == pointerClickHandler && eventData.eligibleForClick;
+#else
+                var isClick = eventData.pointerPress != null && eventData.pointerPress == pointerClickHandler && eventData.eligibleForClick;
+#endif
                 if (isClick)
                 {
                     // Count clicks.
@@ -573,11 +621,13 @@ namespace UnityEngine.InputSystem.UI
 
                 // Invoke OnPointerClick or OnDrop.
                 if (isClick)
-                    #if UNITY_2020_1_OR_NEWER
+                {
+#if UNITY_2020_1_OR_NEWER
                     ExecuteEvents.Execute(eventData.pointerClick, eventData, ExecuteEvents.pointerClickHandler);
-                    #else
+#else
                     ExecuteEvents.Execute(eventData.pointerPress, eventData, ExecuteEvents.pointerClickHandler);
-                    #endif
+#endif
+                }
                 else if (eventData.dragging && eventData.pointerDrag != null)
                     ExecuteEvents.ExecuteHierarchy(currentOverGo, eventData, ExecuteEvents.dropHandler);
 
@@ -1906,6 +1956,13 @@ namespace UnityEngine.InputSystem.UI
         {
             Debug.Assert(m_PointerStates[index].eventData.pointerEnter == null, "Pointer should have exited all objects before being removed");
 
+            // We don't want to release touch pointers on the same frame they are released (unpressed). They get cleaned up one frame later in Process()
+            ref var state = ref GetPointerStateForIndex(index);
+            if (state.pointerType == UIPointerType.Touch && (state.leftButton.isPressed || state.leftButton.wasReleasedThisFrame))
+            {
+                return;
+            }
+
             // Retain event data so that we can reuse the event the next time we allocate a PointerModel record.
             var eventData = m_PointerStates[index].eventData;
             Debug.Assert(eventData != null, "Pointer state should have an event instance!");
@@ -2168,7 +2225,13 @@ namespace UnityEngine.InputSystem.UI
                     // We have input on a mouse or pen. Kill all touch and tracked pointers we may have.
                     for (var i = 0; i < m_PointerStates.length; ++i)
                     {
-                        if (m_PointerStates[i].pointerType != UIPointerType.MouseOrPen)
+                        ref var state = ref GetPointerStateForIndex(i);
+                        // Touch pointers need to get forced to no longer be pressed otherwise they will not get released in subsequent frames.
+                        if (m_PointerStates[i].pointerType == UIPointerType.Touch)
+                        {
+                            state.leftButton.isPressed = false;
+                        }
+                        if (m_PointerStates[i].pointerType != UIPointerType.MouseOrPen && m_PointerStates[i].pointerType != UIPointerType.Touch || (m_PointerStates[i].pointerType == UIPointerType.Touch && !state.leftButton.isPressed && !state.leftButton.wasReleasedThisFrame))
                         {
                             SendPointerExitEventsAndRemovePointer(i);
                             --i;
@@ -2428,6 +2491,17 @@ namespace UnityEngine.InputSystem.UI
         private NavigationModel m_NavigationState;
 
         [NonSerialized] private GameObject m_LocalMultiPlayerRoot;
+
+#if UNITY_INPUT_SYSTEM_SENDPOINTERHOVERTOPARENT
+        // Needed for testing.
+        internal new bool sendPointerHoverToParent
+        {
+            get => base.sendPointerHoverToParent;
+            set => base.sendPointerHoverToParent = value;
+        }
+#else
+        private bool sendPointerHoverToParent => true;
+#endif
 
         /// <summary>
         /// Controls the origin point of raycasts when the cursor is locked.

@@ -11,15 +11,59 @@ however, it has to be formatted properly to pass verification tests.
 ## [Unreleased] - yyyy-mm-dd
 
 ### Fixed
+- Fixed touch pointers being released twice causing an index out of bounds error. [ISXB-687](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-687)
+- Fixed `NullReferenceException` from disconnecting and reconnecting a GXDKGamepad.
+
+### Added
+- Added the display of the device flag `CanRunInBackground` in device debug view.
+- Added analytics for programmatic `InputAction` setup via `InputActionSetupExtensions` when exiting play-mode.
+
+### Fixed
+- Fixed wrong mapping of Xbox Series S|X and Xbox One wireless controllers "View" button on macOS.[ISXB-385](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-385)
+
+## [1.11.1] - 2024-09-26
+
+### Fixed
+- Fixed Multiple interactions could breaks on Composite Binding. [ISXB-619](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-619)
+- Fixed memory leak when the OnScreenStick component was destroyed [ISXB-1070](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-1070). Contribution by [LukeUnityDev](https://github.com/LukeUnityDev).
+- Fixed Action Maps contextual menu in Action Editor UI that occasionally displays unrelated items.
+- Fixed "MissingReferenceException" errors when closing an in-game dropdown field [ISXB-1081](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-1081).
+- Fixed potential crash on Mac when using stale references to deleted InputDevice objects [ISXB-606](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-606).
+- Fixed conditional compilation for non-editor analytics on platforms not enabling analytics.
+
+### Changed
+- Renamed editor Resources directories to PackageResources to fix package validation warnings.
+- Changed representation of GamepadButton enum values in Inspector to display aliased enum values as a single item to avoid confusion around selection and aliased value display when multiple enum items map to the same numerical value. [ISXB-543](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-543)
+- PlayerInput component now warns if the system cannot find matching control scheme, which can occur if all control schemes already paired (e.g. to other game objects with PlayerInput components) [ISXB-1020](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-1020)
+
+## [1.11.0] - 2024-09-10
+
+### Fixed
 - Fixed memory allocation on every frame when using UIDocument without EventSystem. [ISXB-953](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-953)
+- Fixed Action Maps name edition which could be inconsistent in Input Action Editor UI.
+- Fixed InputDeviceTester sample only visualizing a given touch contact once. [ISXB-1017](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-1017)
+- Fixed an update loop in the asset editor that occurs when selecting an Action Map that has no Actions.
+- Fixed Package compilation when Unity Analytics module is not enabled on 2022.3. [ISXB-996](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-996)
+- Fixed 'OnDrop' event not called when 'IPointerDownHandler' is also listened. [ISXB-1014](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-1014)
+- Fixed InputSystemUIInputModule calling pointer events on parent objects even when the "Send Pointer Hover To Parent" is off. [ISXB-586](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-586)
+- Improved performance of disconnected device activation (ISX-1450)
+- Fixed DualSense controllers being recognized as DualShock4 (ISX-1411)
 
 ### Changed
 - Use `ProfilerMarker` instead of `Profiler.BeginSample` and `Profiler.EndSample` when appropriate to enable recording of profiling data.
+
+### Added
+- Added Hinge Angle sensor support for foldable devices.
+- Added InputDeviceMatcher.WithManufacturerContains(string noRegexMatch) API to improve DualShockSupport.Initialize performance (ISX-1411)
+- Added tests for Input Action Editor UI for managing action maps (List, create, rename, delete) (ISX-2087)
+- Added automatic loading of custom extensions of InputProcessor, InputInteraction and InputBindingComposite [ISXB-856]](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-856).
+- Added an IME Input sample scene.
 
 ## [1.10.0] - 2024-07-24
 
 ### Fixed
 - Fixed default scroll speed in uGUI being slower than before. [ISXB-766](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-766)
+- Fixed selection state preserving after a save operation. [ISXB-966](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-966)
 - Fixed an issue when multiple interactions drive an action and perform during the cancelation of the current active interaction [ISXB-310](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-310).
 - Fixed an issue when generating C# class of Input Actions that contain an action map named `Debug` [ISXB-851](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-851).
 - Fixed ArgumentNullException thrown when accessing Action's bindings after changing Composite part. [ISXB-494](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-494).
@@ -194,8 +238,8 @@ however, it has to be formatted properly to pass verification tests.
 - Make Project-wide Actions the default actions for Player Input.
 
 ### Added
-- Support for [Game rotation vector](https://developer.android.com/reference/android/hardware/Sensor#TYPE_GAME_ROTATION_VECTOR) sensor on Android
-- Duplicate Input Action Items in the new Input Action Asset Editor with Ctrl+D (Windows) or Cmd+D (Mac)
+- Support for [Game rotation vector](https://developer.android.com/reference/android/hardware/Sensor#TYPE_GAME_ROTATION_VECTOR) sensor on Android.
+- Duplicate Input Action Items in the new Input Action Asset Editor with Ctrl+D (Windows) or Cmd+D (Mac).
 - Selection of InputActionReferences from project-wide actions on fields that are of type InputActionReference. Uses a new advanced object picker that allows better searching and filtering of actions.
 - Reset project wide Input Settings to default via a new Kebab-menu in Input System Project Settings.
 
