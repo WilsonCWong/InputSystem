@@ -124,8 +124,6 @@ namespace UnityEngine.InputSystem.Editor
 
             ContextMenu.GetContextMenuForActionListView(this, m_ActionsTreeView, m_ActionsTreeView.parent);
             ContextMenu.GetContextMenuForActionsEmptySpace(this, m_ActionsTreeView, root.Q<VisualElement>("rclick-area-to-add-new-action"));
-            // Only bring up this context menu for the Tree when it's empty, so we can treat it like right-clicking the empty space:
-            ContextMenu.GetContextMenuForActionsEmptySpace(this, m_ActionsTreeView, m_ActionsTreeView, onlyShowIfTreeIsEmpty: true);
 
             m_ActionsTreeViewSelectionChangeFilter = new CollectionViewSelectionChangeFilter(m_ActionsTreeView);
             m_ActionsTreeViewSelectionChangeFilter.selectedIndicesChanged += (_) =>
@@ -693,7 +691,7 @@ namespace UnityEngine.InputSystem.Editor
             if (currentControlScheme.HasValue && !string.IsNullOrEmpty(currentControlScheme.Value.name))
             {
                 var isMatchingDevice = true;
-                if (deviceIndex >= 0)
+                if (deviceIndex >= 0 && deviceIndex < currentControlScheme.Value.deviceRequirements.Count)
                 {
                     var devicePathToMatch = InputControlPath.TryGetDeviceLayout(currentControlScheme.Value.deviceRequirements.ElementAt(deviceIndex).controlPath);
                     var devicePath = InputControlPath.TryGetDeviceLayout(serializedInputBinding.path);
