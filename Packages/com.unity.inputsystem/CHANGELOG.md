@@ -10,6 +10,39 @@ however, it has to be formatted properly to pass verification tests.
 
 ## [Unreleased] - yyyy-mm-dd
 
+### Changed
+- Changed enum value `Key.IMESelected` to obsolete which was not a real key. Please use the ButtonControl `imeSelected`.
+
+### Added
+- Added support of F13-F24 keys. [UUM-44328](https://issuetracker.unity3d.com/product/unity/issues/guid/UUM-44328)
+
+## [1.13.1] - 2025-02-18
+
+### Fixed
+- Fixed a problem with the logic to get the active player settings object that cause an infinit reimport loop. [ISXB-1430](https://issuetracker.unity3d.com/product/unity/issues/guid/UUM-96793)
+- Fixed an issue where removing a newly created action in the Asset Editor would cause an exception. [UUM-95693](https://issuetracker.unity3d.com/product/unity/issues/guid/UUM-95693)
+- Fixed arrow key navigation of Input Actions after Action rename. [ISXB-1024](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-1024)
+- Fixed gamepad navigation in UI Toolkit TextField when using InputSystemUIInputModule. [UUM-77364](https://issuetracker.unity3d.com/product/unity/issues/guid/UUM-77364)
+- Fixed issue where asset editor window splitter positions were not persisted [ISXB-1316]
+
+### Changed
+- Changed default input action asset name from New Controls to New Actions.
+
+## [1.13.0] - 2025-02-05
+
+### Fixed
+- Fixed an issue where the prompt to enable the InputSystem backends would interrupt the import of large assets.
+- Fixed Cut Mode for Action Maps and Actions to make renaming disabled. [ISXB-1155](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-1155)
+- Fixed GamepadButton.LeftTrigger and GamepadButton.RightTrigger enum values not matching displayed dropdown values in editor when using GamepadButtonPropertyDrawer [ISXB-1270](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-1270).
+- Fixed an issue causing InvalidOperationException when entering playmode with domain reload disabled. [ISXB-1208](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-1208).
+- Fixed an issue where compiling Addressables with Input System package present would result in failed compilation due to `IInputAnalytic.TryGatherData` not being defined [ISXB-1203](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-1203).
+- Pinned Touch Samples sample package dependencies to avoid errors with Cinemachine 3.x and Probuilder 6.x. [ISXB-1245](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-1245)
+- Fixed issue where a binding path is sometimes not saved when chosen from the binding path picker. [ISXB-1221](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-1221)
+- Fixed an issue where dropdown menu for Path in Input Actions Editor could not be selected from any button position. [ISXB-1309](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-1309)
+- Fixed an issue where changing Input System default parameter settings with the editor open would result in changes in the editor. [ISXB-1351](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-1351)
+
+## [1.12.0] - 2025-01-15
+
 ### Fixed
 - Fixed an issue causing the Action context menu to not show on right click when right clicking an action in the Input Action Editor [ISXB-1134](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-1134).
 - Reverted changes from 0ddd534d8 (ISXB-746) which introduced a regression [ISXB-1127](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-1127).
@@ -34,8 +67,15 @@ however, it has to be formatted properly to pass verification tests.
 - Fixed an issue with default device selection when adding new Control Scheme.
 - Fixed an issue where action map delegates were not updated when the asset already assigned to the PlayerInput component were changed [ISXB-711](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-711).
 - Fixed Action properties edition in the UI Toolkit version of the Input Actions Asset editor. [ISXB-1277](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-1277)
+- Fixed an editor crash caused by input debugger device state window reusing cached state when reconnecting Stadia controller. [ISXB-658](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-658)
+- Fixed an issue where batch jobs would fail with "Error: Error building Player because scripts are compiling" if a source generated .inputactions asset is out of sync with its generated source code (ISXB-1300).
+- Fixed multiple `OnScreenStick` Components that does not work together when using them simultaneously in isolation mode. [ISXB-813](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-813)
+- Fixed an issue in input actions editor window that caused certain fields in custom input composite bindings to require multiple clicks to action / focus. [ISXB-1171](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-1171)
+- Fixed an editor/player hang in `InputSystemUIInputModule` due to an infinite loop. This was caused by the assumption that `RemovePointerAtIndex` would _always_ successfully remove the pointer, which is not the case with touch based pointers. [ISXB-1258](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-1258)
+- Fixed wrong Xbox Series S|X and Xbox One wireless controllers "View" button mapping on macOS by expanding device PID and VID matching. [ISXB-1264](https://issuetracker.unity3d.com/product/unity/issues/guid/ISXB-1264)
 
 ### Changed
+- Changed location of the link xml file (code stripping rules), from a temporary directory to the project Library folder (ISX-2140).
 - Added back the InputManager to InputSystem project-wide asset migration code with performance improvement (ISX-2086).
 - Changed `OnScreenControl` to automaticaly switch, in Single Player with autoswitch enabled, to the target device control scheme when the first component is enabled to prevent bad interactions when it start.
 - Changed paremeter `overrideModifiersNeedToBePressedFirst` to obsolete for `ButtonWithOneModifier`, `ButtonWithTwoModifiers`, `OneModifierComposite` and `TwoModifiersComposite` in favour the new `modifiersOrder` parameter which is more explicit.
@@ -44,6 +84,7 @@ however, it has to be formatted properly to pass verification tests.
 ### Added
 - Added new API `InputSystem.settings.useIMGUIEditorForAssets` that should be used in custom `InputParameterEditor` that use both IMGUI and UI Toolkit.
 - Added ProfilerMakers to `InputAction.Enable()` and `InputActionMap.ResolveBindings()` to enable gathering of profiling data.
+- Added throwing an error message when trying to use the Input System package on console without the extension package installed.
 
 ## [1.11.2] - 2024-10-16
 
