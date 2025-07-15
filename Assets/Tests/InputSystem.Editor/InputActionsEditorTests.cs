@@ -45,7 +45,7 @@ internal class InputActionsEditorTests : UIToolkitBaseTestWindow<InputActionsEdi
 
     #region Helper methods
 
-    IEnumerator WaitForActionMapRename(int index, bool isActive, double timeoutSecs = 5.0)
+    IEnumerator WaitForActionMapRename(int index, bool isActive, double timeoutSecs = kDefaultTimeoutSecs)
     {
         return WaitUntil(() =>
         {
@@ -58,7 +58,7 @@ internal class InputActionsEditorTests : UIToolkitBaseTestWindow<InputActionsEdi
         }, $"WaitForActionMapRename {index} {isActive}", timeoutSecs);
     }
 
-    IEnumerator WaitForActionRename(int index, bool isActive, double timeoutSecs = 5.0)
+    IEnumerator WaitForActionRename(int index, bool isActive, double timeoutSecs = kDefaultTimeoutSecs)
     {
         return WaitUntil(() =>
         {
@@ -74,7 +74,6 @@ internal class InputActionsEditorTests : UIToolkitBaseTestWindow<InputActionsEdi
     #endregion
 
     [Test]
-    [Ignore("Instability, see ISXB-1284")]
     public void CanListActionMaps()
     {
         var actionMapsContainer = m_Window.rootVisualElement.Q("action-maps-container");
@@ -88,7 +87,6 @@ internal class InputActionsEditorTests : UIToolkitBaseTestWindow<InputActionsEdi
     }
 
     [UnityTest]
-    [Ignore("Instability, see ISXB-1284")]
     public IEnumerator CanCreateActionMap()
     {
         var button = m_Window.rootVisualElement.Q<Button>("add-new-action-map-button");
@@ -117,7 +115,6 @@ internal class InputActionsEditorTests : UIToolkitBaseTestWindow<InputActionsEdi
     }
 
     [UnityTest]
-    [Ignore("Instability, see ISXB-1284")]
     public IEnumerator CanRenameActionMap()
     {
         var actionMapsContainer = m_Window.rootVisualElement.Q("action-maps-container");
@@ -166,7 +163,6 @@ internal class InputActionsEditorTests : UIToolkitBaseTestWindow<InputActionsEdi
     }
 
     [UnityTest]
-    [Ignore("Instability, see ISXB-1284")]
     public IEnumerator CanDeleteActionMap()
     {
         var actionMapsContainer = m_Window.rootVisualElement.Q("action-maps-container");
@@ -195,7 +191,6 @@ internal class InputActionsEditorTests : UIToolkitBaseTestWindow<InputActionsEdi
     }
 
     [UnityTest]
-    [Ignore("Instability, see ISXB-1284")]
     public IEnumerator CanRenameAction()
     {
         var actionContainer = m_Window.rootVisualElement.Q("actions-container");
@@ -213,8 +208,8 @@ internal class InputActionsEditorTests : UIToolkitBaseTestWindow<InputActionsEdi
         // Re-fetch the actions since the UI may have refreshed.
         actionItem = actionContainer.Query<InputActionsTreeViewItem>().ToList();
 
-        // Click twice to start the rename
         SimulateClickOn(actionItem[1]);
+        yield return WaitForNotDirty();
         // If the item is already focused, don't click again
         if (!actionItem[1].IsFocused)
         {
