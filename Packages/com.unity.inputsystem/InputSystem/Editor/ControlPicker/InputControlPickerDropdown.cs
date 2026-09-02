@@ -47,7 +47,7 @@ namespace UnityEngine.InputSystem.Editor
                 m_ExpectedControlType = typeof(InputDevice);
             else
                 m_ExpectedControlType = !string.IsNullOrEmpty(expectedControlLayout)
-                    ? InputSystem.s_Manager.m_Layouts.GetControlTypeForLayout(new InternedString(expectedControlLayout))
+                    ? InputSystem.manager.m_Layouts.GetControlTypeForLayout(new InternedString(expectedControlLayout))
                     : null;
 
             // If the layout is for a device, automatically switch to device
@@ -417,7 +417,7 @@ namespace UnityEngine.InputSystem.Editor
             if (m_ExpectedControlType == null)
                 return true;
 
-            var layoutType = InputSystem.s_Manager.m_Layouts.GetControlTypeForLayout(new InternedString(layout));
+            var layoutType = InputSystem.manager.m_Layouts.GetControlTypeForLayout(new InternedString(layout));
             return m_ExpectedControlType.IsAssignableFrom(layoutType);
         }
 
@@ -575,6 +575,7 @@ namespace UnityEngine.InputSystem.Editor
                     // When picking controls, have a "Listen" button that allows listening for input.
                     if (m_Owner.m_Mode == InputControlPicker.Mode.PickControl)
                     {
+                        GUILayout.Space(8f);
                         using (new EditorGUILayout.VerticalScope(GUILayout.MaxWidth(50)))
                         {
                             GUILayout.Space(4);
@@ -597,6 +598,10 @@ namespace UnityEngine.InputSystem.Editor
 
                             isListening = isListeningNew;
                         }
+                    }
+                    else
+                    {
+                        GUILayout.Space(8f);
                     }
 
                     ////FIXME: the search box doesn't clear out when listening; no idea why the new string isn't taking effect

@@ -21,7 +21,8 @@ namespace UnityEngine.InputSystem.Editor
             m_ListViewSelectionChangeFilter = new CollectionViewSelectionChangeFilter(m_ListView);
             m_ListViewSelectionChangeFilter.selectedIndicesChanged += (selectedIndices) =>
             {
-                Dispatch(Commands.SelectActionMap(((ActionMapData)m_ListView.selectedItem).mapName));
+                if (m_ListView.selectedItem is ActionMapData mapData)
+                    Dispatch(Commands.SelectActionMap(mapData.mapName));
             };
 
             m_ListView.bindItem = (element, i) =>
@@ -130,6 +131,9 @@ namespace UnityEngine.InputSystem.Editor
         internal void DeleteActionMap(int index)
         {
             Dispatch(Commands.DeleteActionMap(index));
+
+            // Deleting an item sometimes causes the UI Panel to lose focus; make sure we keep it
+            m_ListView.Focus();
         }
 
         internal void DuplicateActionMap(int index)

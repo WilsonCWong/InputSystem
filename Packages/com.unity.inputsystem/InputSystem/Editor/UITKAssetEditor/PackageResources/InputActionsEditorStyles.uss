@@ -229,3 +229,11 @@
 .matching-controls-labels {
     margin: 1px;
 }
+
+#action-editor {
+    min-width: 520px;
+}
+
+#control-schemes-toolbar-container {
+    flex-shrink: 0;
+}

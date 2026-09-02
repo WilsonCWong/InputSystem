@@ -127,7 +127,7 @@ class DocumentationBasedAPIVerficationTests
             typeof(MonoBehaviour).IsAssignableFrom(t));
 
         var monoBehaviourTypesWithHelpUrls = monoBehaviourTypes
-            .Where(t => t.GetCustomAttribute<HelpURLAttribute>() != null);
+            .Where(t => t.GetCustomAttributes<HelpURLAttribute>().Any());
 
         var brokenHelpUrlErrors = new StringBuilder();
 
@@ -135,7 +135,8 @@ class DocumentationBasedAPIVerficationTests
         foreach (var monoBehaviorTypeWithHelpUrl in monoBehaviourTypesWithHelpUrls)
         {
             // Get url
-            var url = monoBehaviorTypeWithHelpUrl.GetCustomAttribute<HelpURLAttribute>().URL;
+            var test = monoBehaviorTypeWithHelpUrl.GetCustomAttributes<HelpURLAttribute>();
+            var url = test.FirstOrDefault()?.URL;
 
             // Parse file path and anchor.
             var path = url.Substring(InputSystem.kDocUrl.Length);
@@ -391,6 +392,14 @@ class DocumentationBasedAPIVerficationTests
                 continue;
 
             if (link.StartsWith("https://"))
+                continue;
+
+            // javascript: URIs are used by the PMDT 3.x HTML theme for collapsible navigation elements
+            if (link.StartsWith("javascript:"))
+                continue;
+
+            // xref: URIs are unresolved DocFX cross-references to types outside this package
+            if (link.StartsWith("xref:"))
                 continue;
 
             if (link == "#top")

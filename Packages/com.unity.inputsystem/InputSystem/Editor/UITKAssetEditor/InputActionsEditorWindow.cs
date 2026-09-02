@@ -24,6 +24,7 @@ namespace UnityEngine.InputSystem.Editor
 
         private string m_AssetJson;
         private bool m_IsDirty;
+        private bool m_IsEditorQuitting;
 
         private StateContainer m_StateContainer;
         private InputActionsEditorView m_View;
@@ -207,16 +208,21 @@ namespace UnityEngine.InputSystem.Editor
                     var asset = AssetDatabase.LoadAssetAtPath<InputActionAsset>(assetPath);
 
                     if (asset == null)
-                        throw new Exception($"Failed to load asset \"{assetPath}\". The file may have been deleted or moved.");
+                    {
+                        // Can happen when an asset is deleted while the window is open.
+                        // Delay the closure to avoid null-refs on repaint.
+                        EditorApplication.delayCall += Close;
+                        return;
+                    }
 
                     m_AssetJson = InputActionsEditorWindowUtils.ToJsonWithoutName(asset);
 
                     if (m_AssetObjectForEditing == null)
                     {
                         workingCopy = InputActionAssetManager.CreateWorkingCopy(asset);
+                        m_State = new InputActionsEditorState(m_State, new SerializedObject(workingCopy));
                         if (m_State.m_Analytics == null)
                             m_State.m_Analytics = analytics;
-                        m_State = new InputActionsEditorState(m_State, new SerializedObject(workingCopy));
                         m_AssetObjectForEditing = workingCopy;
                     }
                     else
@@ -333,11 +339,28 @@ namespace UnityEngine.InputSystem.Editor
         private void OnEnable()
         {
             analytics.Begin();
+            EditorApplication.wantsToQuit += OnWantsToQuit;
         }
 
         private void OnDisable()
         {
             analytics.End();
+            EditorApplication.wantsToQuit -= OnWantsToQuit;
+        }
+
+        private bool OnWantsToQuit()
+        {
+            // Here the user will be prompted
+            bool isAllowedToQuit = CheckCanCloseAndPromptIfDirty(false);
+            m_IsEditorQuitting = isAllowedToQuit;
+
+            if (m_IsEditorQuitting)
+            {
+                // Reset flag in case another wantsToQuit listener aborts the quit.
+                EditorApplication.delayCall += () => m_IsEditorQuitting = false;
+            }
+
+            return m_IsEditorQuitting;
         }
 
         private void OnFocus()
@@ -362,16 +385,22 @@ namespace UnityEngine.InputSystem.Editor
             analytics.RegisterEditorFocusOut();
         }
 
-        private void HandleOnDestroy()
+        /// <summary>
+        /// Shows a dialog when trying to close an input asset without saving changes.
+        /// </summary>
+        /// <param name="rebuildUIOnCancel">If true, reopens the editor window when user cancels.</param>
+        /// <returns> Returns true if you should allow the Unity Editor to close. </returns>
+        private bool CheckCanCloseAndPromptIfDirty(bool rebuildUIOnCancel)
         {
             // Do we have unsaved changes that we need to ask the user to save or discard?
-            if (!m_IsDirty)
-                return;
+            // Early out if asset up to date or editor closing.
+            if (!m_IsDirty || m_IsEditorQuitting)
+                return true;
 
             // Get target asset path from GUID, if this fails file no longer exists and we need to abort.
             var assetPath = AssetDatabase.GUIDToAssetPath(m_AssetGUID);
             if (string.IsNullOrEmpty(assetPath))
-                return;
+                return true;
 
             // Prompt user with a dialog
             var result = Dialog.InputActionAsset.ShowSaveChanges(assetPath);
@@ -379,14 +408,18 @@ namespace UnityEngine.InputSystem.Editor
             {
                 case Dialog.Result.Save:
                     Save(isAutoSave: false);
-                    break;
+                    return true;
                 case Dialog.Result.Cancel:
-                    // Cancel editor quit. (open new editor window with the edited asset)
-                    ReshowEditorWindowWithUnsavedChanges();
-                    break;
+                    if (rebuildUIOnCancel)
+                    {
+                        // Cancel editor quit. (open new editor window with the edited asset)
+                        ReshowEditorWindowWithUnsavedChanges();
+                    }
+
+                    return false;
                 case Dialog.Result.Discard:
                     // Don't save, quit - reload the old asset from the json to prevent the asset from being dirtied
-                    break;
+                    return true;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(result));
             }
@@ -394,7 +427,7 @@ namespace UnityEngine.InputSystem.Editor
 
         private void OnDestroy()
         {
-            HandleOnDestroy();
+            CheckCanCloseAndPromptIfDirty(true);
 
             // Clean-up
             CleanupStateContainer();
